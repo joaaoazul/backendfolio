@@ -1,0 +1,82 @@
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>João Azul | Portfólio</title>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            dark: '#0a0a0a',
+                            techgreen: '#2563eb',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        </script>
+        <style>
+            body, html { height: 100%; background-color: #0a0a0a; scroll-behavior: smooth; }
+            .hero-img { object-fit: cover; aspect-ratio: 4/5; }
+        </style>
+    </head>
+    <body class="bg-dark text-white font-sans antialiased overflow-x-hidden">
+
+    <div class="min-h-screen flex flex-col max-w-7xl mx-auto px-6 md:px-12 py-8">
+
+        <header class="flex flex-col md:flex-row justify-between items-center gap-6 mb-16">
+            <div hx-get="/home-content"
+                 hx-target="#main-content"
+                 hx-push-url="/"
+                 class="text-2xl font-black tracking-tighter uppercase group cursor-pointer">
+                joaoazul<span class="text-techgreen group-hover:animate-pulse">.</span>dev
+            </div>
+
+            <nav class="flex items-center gap-8 text-sm font-medium text-zinc-400">
+                <button hx-get="/projects-content"
+                        hx-target="#main-content"
+                        hx-push-url="true"
+                        class="hover:text-white transition-colors cursor-pointer outline-none">
+                    Projetos
+                </button>
+
+                <a href="#sobre" class="hover:text-white transition-colors">Sobre</a>
+
+                <a href="{{ url_for('static', filename='assets/cv/joaoazulcv.pdf') }}"
+                   target="_blank"
+                   class="hover:text-white transition-colors border-b border-transparent hover:border-techgreen">CV</a>
+            </nav>
+        </header>
+
+        <main id="main-content" class="flex-grow">
+            {% include 'home_fragment.html' %}
+        </main>
+
+
+
+        <footer class="mt-20 py-8 border-t border-zinc-900 flex flex-col sm:flex-row justify-between items-center gap-6 text-zinc-600 text-[10px] tracking-[0.2em] uppercase">
+            <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+                <p class="whitespace-nowrap">2025, João Azul</p>
+                <div class="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-zinc-800 pt-4 sm:pt-0 sm:pl-5">
+                    <a href="https://github.com/joaaoazul" class="w-5 h-5 hover:text-white">{% include 'icons/github.html' %}</a>
+                    <a href="https://instagram.com/joaaoazul" class="w-6 h-6 hover:opacity-80">{% include 'icons/instagram.html' %}</a>
+                    <a href="https://linkedin.com/in/joao-azul" class="w-6 h-6 hover:opacity-80">{% include 'icons/linkedin.html' %}</a>
+                </div>
+            </div>
+            <span class="text-center">Feito em Faro, Portugal 🇵🇹</span>
+        </footer>
+    </div>
+    </body>
+    </html>
