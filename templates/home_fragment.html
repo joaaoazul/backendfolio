@@ -1,12 +1,9 @@
 <section class="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 items-center min-h-[80vh] py-12">
 
-    <div class="md:col-span-5 relative group max-w-[320px] md:max-w-none mx-auto w-full"
-         hx-get="/get-video" hx-trigger="mouseenter once" hx-target="#video-slot">
-        <div class="absolute -inset-2 bg-techgreen/15 rounded-[2rem] blur-3xl opacity-0 group-hover:opacity-100 transition duration-700"></div>
-        <div class="relative rounded-[2rem] overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-900 aspect-[4/5]">
-            <img src="{{ url_for('static', filename='assets/joaolanding.JPG') }}" alt="Foto do João Azul"
-                 class="hero-img w-full h-full object-cover grayscale group-hover:opacity-0 transition-opacity duration-500 z-10 relative">
-            <div id="video-slot" class="absolute inset-0 z-0"></div>
+    <div class="md:col-span-5 relative max-w-[320px] md:max-w-none mx-auto w-full">
+        <div class="relative rounded-[2rem] overflow-hidden aspect-[4/5]">
+            <img src="{{ url_for('static', filename='assets/joaolanding.png') }}" alt="Foto do João Azul"
+                 class="hero-img w-full h-full object-cover grayscale">
         </div>
     </div>
 
