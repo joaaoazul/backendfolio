@@ -10,13 +10,6 @@ def index():
 def home_content():
     return render_template("home_fragment.html")
 
-@app.route("/get-video")
-def get_video():
-    return '''
-            <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-500 z-0">
-                <source src="/static/assets/joaolive.mp4" type="video/mp4">
-            </video>
-        '''
 
 
 projects_list = [
