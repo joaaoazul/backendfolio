@@ -28,6 +28,7 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-8 items-center mt-4 w-full sm:w-auto">
+
             <a href="#projetos" hx-get="/projects-content" hx-target="#main-content" hx-push-url="true" class="group relative px-8 py-4 border-2 border-white text-white font-bold rounded-full overflow-hidden transition-all duration-300 hover:text-black hover:bg-white active:scale-95 w-full sm:w-auto text-center cursor-pointer">
                  <span class="relative z-10 flex items-center justify-center gap-2">
                      {{ t.btn_projetos }}
@@ -35,17 +36,25 @@
                         <path d="M5 12h14m-7-7 7 7-7 7"/>
                      </svg>
                  </span>
+                <span class="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"></span>
             </a>
 
-            <a href="{{ url_for('static', filename='assets/cv/joaoazulcv.pdf') }}" target="_blank" class="group relative py-2 text-zinc-400 font-medium hover:text-white transition-colors duration-300">
-                 <span class="flex items-center gap-2">
-                     {{ t.btn_cv }}
-                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-y-1 transition-transform duration-300">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
-                     </svg>
-                 </span>
-                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-techgreen transition-all duration-300 group-hover:w-full"></span>
-            </a>
+            <div class="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-zinc-800 pt-6 sm:pt-0 sm:pl-6">
+
+                <a href="https://github.com/joaaoazul" target="_blank" rel="noopener noreferrer" class="transition-transform duration-300 hover:scale-110 hover:-translate-y-1">
+                    <img src="https://skillicons.dev/icons?i=github&theme=dark" alt="GitHub" class="w-12 h-12 md:w-14 md:h-14 drop-shadow-lg">
+                </a>
+
+                <a href="https://linkedin.com/in/joao-azul" target="_blank" rel="noopener noreferrer" class="transition-transform duration-300 hover:scale-110 hover:-translate-y-1">
+                    <img src="https://skillicons.dev/icons?i=linkedin&theme=dark" alt="LinkedIn" class="w-12 h-12 md:w-14 md:h-14 drop-shadow-lg">
+                </a>
+
+                <a href="mailto:cybersec.joao@proton.me" class="transition-transform duration-300 hover:scale-110 hover:-translate-y-1">
+                    <img src="https://skillicons.dev/icons?i=gmail&theme=dark" alt="Email" class="w-12 h-12 md:w-14 md:h-14 drop-shadow-lg">
+                </a>
+
+            </div>
+
         </div>
     </div>
 </section>

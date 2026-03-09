@@ -1,5 +1,17 @@
 import os
-from flask import Flask, render_template, session, request, redirect, url_for
+from flask import Flask, render_template, session, request, redirect, url_for, flash
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, SubmitField
+from wtforms.validators import DataRequired, Email, Length
+
+from dotenv import load_dotenv
+load_dotenv()
+
+import resend
+resend.api_key = os.environ.get("RESEND_API_KEY")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+
+
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta_portfolio"
@@ -39,9 +51,21 @@ TRANSLATIONS = {
         "footer": "Made in Faro, Portugal 🇵🇹",
         "construir": "Shall we build <br>something <span class=\"text-techgreen\">together?</span>",
         "btn_contacto": "Get in touch!",
-        "tecnologias": "Technologies"
+        "tecnologias": "Technologies",
+"contact_title": "Contacto",
+"name_label": "Nome *",
+"email_label": "Email *",
+"message_label": "Mensagem *",
+"submit_label": "Enviar Mensagem",
+"success_msg": "Mensagem enviada! Respondo em breve.",
+"error_msg": "Erro no envio. Tenta outra vez."
+
     }
 }
+
+resend.api_key = os.environ.get("RESEND_API_KEY")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "joaoazul@gmail.com")
+
 
 @app.context_processor
 def inject_translations():
@@ -57,12 +81,51 @@ def set_language(language):
 
 @app.route("/")
 def index():
-    return render_template("index.html", active_page='home')
+    form = ContactForm()
+    return render_template("index.html", active_page='home', form=form)
+
+
+class ContactForm(FlaskForm):
+    name = StringField(validators=[DataRequired(), Length(min=2)])
+    email = StringField(validators=[DataRequired(), Email()])
+    message = TextAreaField(validators=[DataRequired(), Length(min=10)])
+    submit = SubmitField()
+
+
+@app.route("/contact", methods=['GET', 'POST'])
+@app.route("/contact-content")
+def contact():
+    form = ContactForm()
+    lang = session.get("language", "pt")
+
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            params = {
+                "from": f"Portfolio <noreply@joaoazul.dev>",
+                "to": [ADMIN_EMAIL],
+                "subject": f"Contacto: {form.name.data}",
+                "html": f"<h2>Contacto Novo</h2><p><b>{form.name.data}</b> ({form.email.data})<br>{form.message.data}</p>"
+            }
+            resend.Emails.send(params)
+            flash(TRANSLATIONS[lang]["success_msg"])
+        except:
+            flash(TRANSLATIONS[lang]["error_msg"])
+
+        if 'HX-Request' in request.headers:
+            return render_template("contacts_fragment.html", form=form, success=True)
+        return redirect(url_for('contact'))
+
+    if 'HX-Request' in request.headers:
+        return render_template("contacts_fragment.html", form=form)
+
+    return render_template("index.html", active_page='contact', form=form)
+
 
 @app.route("/home-content")
 def home_content():
+    form = ContactForm()
     if 'HX-Request' in request.headers:
-        return render_template("home_fragment.html")
+        return render_template("home_fragment.html", form=form)
     return redirect(url_for('index'))
 
 @app.route("/projects-content")
