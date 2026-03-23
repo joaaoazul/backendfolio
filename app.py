@@ -166,5 +166,11 @@ def projects_content():
     return render_template("index.html", active_page='projects', projects=projects_list)
 
 
+@app.route("/about-content")
+def about_content():
+    if 'HX-Request' in request.headers:
+        return render_template("about_fragment.html")
+    return render_template("index.html", active_page='about')
+
 if __name__ == "__main__":
     app.run(debug=True)

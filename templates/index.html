@@ -53,7 +53,12 @@
                 {{ t.projetos }}
             </button>
 
-            <a href="#sobre" class="hover:text-white transition-colors">{{ t.sobre }}</a>
+            <button hx-get="/about-content"
+                    hx-target="#main-content"
+                    hx-push-url="true"
+                    class="hover:text-white transition-colors cursor-pointer outline-none">
+                {{ t.sobre }}
+            </button>
 
             <a href="{{ url_for('static', filename='assets/cv/joaoazulcv.pdf') }}"
                target="_blank"
