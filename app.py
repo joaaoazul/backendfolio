@@ -183,6 +183,17 @@ class ContactForm(FlaskForm):
     submit = SubmitField()
 
 
+@csrf.error_handler
+def csrf_error(reason):
+    lang = session.get('language', 'pt')
+    form = ContactForm()
+    error_msg = TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('error_msg', 'Erro ao enviar.')
+    flash(error_msg)
+    if "HX-Request" in request.headers:
+        return render_template("contacts_fragment.html", form=form), 400
+    return render_template("index.html", active_page="contact", form=form), 400
+
+
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
