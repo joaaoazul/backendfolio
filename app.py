@@ -7,7 +7,7 @@ from functools import wraps
 from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
 from sqlalchemy.exc import SQLAlchemyError
 from flask_wtf import FlaskForm
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_sqlalchemy import SQLAlchemy
 from wtforms import StringField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
@@ -183,8 +183,8 @@ class ContactForm(FlaskForm):
     submit = SubmitField()
 
 
-@csrf.error_handler
-def csrf_error(reason):
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
     lang = session.get('language', 'pt')
     form = ContactForm()
     error_msg = TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('error_msg', 'Erro ao enviar.')
