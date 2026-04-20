@@ -36,22 +36,31 @@
             {% endwith %}
         </div>
 
-        <form method="POST" hx-post="/contact" hx-target="#contact-section" hx-swap="outerHTML" class="w-full max-w-md space-y-6">
+        <form method="POST" action="/contact" hx-post="/contact" hx-target="#contact-section" hx-swap="outerHTML" class="w-full max-w-md space-y-6">
             {{ form.hidden_tag() }}
 
             <div class="flex flex-col group">
-                <label class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">Nome</label>
-                <input type="text" name="name" class="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all placeholder:text-zinc-600" placeholder="O teu nome" required>
+                <label for="{{ form.name.id }}" class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">{{ t.name_label }}</label>
+                {{ form.name(class_="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all placeholder:text-zinc-600", placeholder="O teu nome", required=True, minlength="2") }}
+                {% if form.name.errors %}
+                    <p class="text-left text-red-400 text-sm mt-2 font-semibold">{{ localize_error(form.name.errors[0]) }}</p>
+                {% endif %}
             </div>
 
             <div class="flex flex-col group">
-                <label class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">Email</label>
-                <input type="email" name="email" class="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all placeholder:text-zinc-600" placeholder="exemplo@email.com" required>
+                <label for="{{ form.email.id }}" class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">{{ t.email_label }}</label>
+                {{ form.email(class_="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all placeholder:text-zinc-600", placeholder="exemplo@email.com", required=True) }}
+                {% if form.email.errors %}
+                    <p class="text-left text-red-400 text-sm mt-2 font-semibold">{{ localize_error(form.email.errors[0]) }}</p>
+                {% endif %}
             </div>
 
             <div class="flex flex-col group">
-                <label class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">Mensagem</label>
-                <textarea name="message" class="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all resize-vertical placeholder:text-zinc-600 min-h-[140px]" placeholder="Como posso ajudar?" required></textarea>
+                <label for="{{ form.message.id }}" class="text-left font-semibold mb-2 text-zinc-400 group-focus-within:text-techgreen transition-colors">{{ t.message_label }}</label>
+                {{ form.message(class_="w-full px-4 py-4 bg-zinc-900/50 border border-zinc-800 rounded-xl focus:border-techgreen focus:ring-1 focus:ring-techgreen focus:outline-none transition-all resize-vertical placeholder:text-zinc-600 min-h-[140px]", placeholder="Como posso ajudar?", required=True, minlength="10") }}
+                {% if form.message.errors %}
+                    <p class="text-left text-red-400 text-sm mt-2 font-semibold">{{ localize_error(form.message.errors[0]) }}</p>
+                {% endif %}
             </div>
 
             <button type="submit" class="flex items-center justify-center gap-4 w-full text-white transition-all duration-300 border border-zinc-700 rounded-xl py-5 text-xl bg-zinc-800 hover:bg-techgreen hover:border-techgreen shadow-lg hover:-translate-y-1 active:scale-95 font-bold cursor-pointer">

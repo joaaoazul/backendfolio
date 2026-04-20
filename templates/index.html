@@ -5,26 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>João Azul | SWE</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
-                extend: {
-                    colors: {
-                        dark: '#0a0a0a',
-                        techgreen: '#2563eb',
-                    }
-                },
-                fontFamily: {
-                    sans: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                }
+                extend: { colors: { dark: '#0a0a0a', techgreen: '#2563eb' } },
+                fontFamily: { sans: ['Outfit', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
             }
         }
     </script>
@@ -52,21 +42,29 @@
                     class="hover:text-white transition-colors cursor-pointer outline-none">
                 {{ t.projetos }}
             </button>
-
             <button hx-get="/about-content"
                     hx-target="#main-content"
                     hx-push-url="true"
                     class="hover:text-white transition-colors cursor-pointer outline-none">
                 {{ t.sobre }}
             </button>
-
             <a href="{{ url_for('static', filename='assets/cv/joaoazulcv-en.pdf') }}"
                target="_blank"
                class="hover:text-white transition-colors border-b border-transparent hover:border-techgreen">CV</a>
             <div class="flex items-center gap-2 text-zinc-400 text-sm font-medium">
-                <a href="/language/pt" class="hover:text-white transition-colors outline-none">PT</a>
+                <a href="/language/pt"
+                   hx-get="/home-content"
+                   hx-target="#main-content"
+                   hx-push-url="/"
+                   hx-trigger="click"
+                   class="hover:text-white transition-colors outline-none">PT</a>
                 <span>|</span>
-                <a href="/language/en" class="hover:text-white transition-colors outline-none">EN</a>
+                <a href="/language/en"
+                   hx-get="/home-content"
+                   hx-target="#main-content"
+                   hx-push-url="/"
+                   hx-trigger="click"
+                   class="hover:text-white transition-colors outline-none">EN</a>
             </div>
         </nav>
     </header>
@@ -74,6 +72,10 @@
     <main id="main-content" class="flex-grow">
         {% if active_page == 'projects' %}
         {% include 'projects_fragment.html' %}
+        {% elif active_page == 'about' %}
+        {% include 'about_fragment.html' %}
+        {% elif active_page == 'contact' %}
+        {% include 'contacts_fragment.html' %}
         {% else %}
         {% include 'home_fragment.html' %}
         {% endif %}

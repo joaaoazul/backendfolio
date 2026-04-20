@@ -15,7 +15,7 @@
                 </div>
                 <div class="absolute -bottom-4 -right-4 z-20 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 shadow-xl">
                     <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold">{{ t.about_based }}</p>
-                    <p class="text-sm font-black text-white">Faro, PT 🇵🇹</p>
+                    <p class="text-sm font-black text-white">Faro, PT \U0001f1f5\U0001f1f9</p>
                 </div>
             </div>
         </div>
@@ -102,11 +102,28 @@
             </div>
         </div>
 
-        <!-- Certificações não precisam de tradução — são nomes próprios -->
         <div>
             <h3 class="text-xl font-black uppercase tracking-[0.3em] text-zinc-500 mb-12">{{ t.about_certificacoes }}</h3>
-            <!-- bloco de certs mantém-se igual ao original -->
-            ...
+            <div class="space-y-3">
+                {% for cert in certifications %}
+                <div class="bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-4 hover:border-techgreen/30 transition-all duration-300 flex items-start gap-4">
+                    <div class="shrink-0 w-8 h-8 bg-techgreen/10 rounded-xl flex items-center justify-center mt-0.5">
+                        {% if cert.icon == 'lock' %}
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        {% else %}
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-sm font-black text-white">{{ cert.title }}</p>
+                        <p class="text-xs text-techgreen font-bold mt-0.5">{{ cert.issuer }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-zinc-500 text-sm">Sem certificações para apresentar.</div>
+                {% endfor %}
+
+            </div>
         </div>
     </div>
 

@@ -1,10 +1,13 @@
 import os
+import json
 import requests
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, render_template, session, request, redirect, url_for, flash
+from flask import Flask, render_template, session, request, redirect, url_for, flash, jsonify
+from sqlalchemy.exc import SQLAlchemyError
 from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from wtforms import StringField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
@@ -17,37 +20,141 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///contactos.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
 
 
 class Contacto(db.Model):
-    id         = db.Column(db.Integer, primary_key=True)
-    name       = db.Column(db.String(100), nullable=False)
-    email      = db.Column(db.String(120), nullable=False)
-    message    = db.Column(db.Text, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    message = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    lido       = db.Column(db.Boolean, default=False)
+    lido = db.Column(db.Boolean, default=False)
+
+
+class Projeto(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title_pt = db.Column(db.String(200), nullable=False)
+    title_en = db.Column(db.String(200), nullable=True)
+    desc_pt = db.Column(db.Text, nullable=False)
+    desc_en = db.Column(db.Text, nullable=True)
+    tech = db.Column(db.String(300), nullable=False, default='')
+    link = db.Column(db.String(300), nullable=True)
+
+    @property
+    def tech_list(self):
+        return [t.strip() for t in self.tech.split(',') if t.strip()]
+
+    def to_dict(self, lang='pt'):
+        return {
+            'id': self.id,
+            'title_pt': self.title_pt,
+            'title_en': self.title_en or self.title_pt,
+            'desc_pt': self.desc_pt,
+            'desc_en': self.desc_en or self.desc_pt,
+            'title': self.title_en if lang == 'en' and self.title_en else self.title_pt,
+            'desc': self.desc_en if lang == 'en' and self.desc_en else self.desc_pt,
+            'tech': self.tech_list,
+            'link': self.link or ''
+        }
+
+
+class Certificacao(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    issuer = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(30), nullable=False, default='shield')
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'issuer': self.issuer,
+            'icon': self.icon,
+            'order_index': self.order_index,
+        }
+
+
+DEFAULT_CERTIFICATIONS = [
+    {'title': 'Introduction to Cybersecurity', 'issuer': 'Cisco Networking Academy', 'icon': 'shield'},
+    {'title': 'Networking Basics', 'issuer': 'Cisco Networking Academy', 'icon': 'shield'},
+    {'title': 'Endpoint Security', 'issuer': 'Cisco Networking Academy', 'icon': 'shield'},
+    {'title': 'Network Defense', 'issuer': 'Cisco Networking Academy', 'icon': 'shield'},
+    {'title': 'Cyber Threat Management', 'issuer': 'Cisco Networking Academy', 'icon': 'shield'},
+    {'title': 'Ethical Hacker', 'issuer': 'Cisco Networking Academy', 'icon': 'lock'},
+    {'title': 'Boas Práticas de Cibersegurança', 'issuer': 'CNCS - Centro Nacional de Ciberseguranca', 'icon': 'lock'},
+    {'title': 'Fundamentos de Cibersegurança', 'issuer': 'CNCS - Centro Nacional de Ciberseguranca', 'icon': 'lock'},
+    {'title': 'Resiliência de Cibersegurança', 'issuer': 'CNCS - Centro Nacional de Ciberseguranca', 'icon': 'lock'},
+]
+
 
 with app.app_context():
     db.create_all()
+    if Certificacao.query.count() == 0:
+        for idx, cert in enumerate(DEFAULT_CERTIFICATIONS):
+            db.session.add(Certificacao(
+                title=cert['title'],
+                issuer=cert['issuer'],
+                icon=cert['icon'],
+                order_index=idx
+            ))
+        db.session.commit()
+
+
+def load_translations():
+    translations = {}
+    for lang in ['pt', 'en']:
+        path = os.path.join('translations', f'{lang}.json')
+        with open(path, encoding='utf-8') as f:
+            translations[lang] = json.load(f)
+    return translations
+
+TRANSLATIONS = load_translations()
+
+VALIDATION_ERROR_MAP = {
+    'pt': {
+        'This field is required.': 'Este campo é obrigatório.',
+        'Invalid email address.': 'Email inválido.',
+        'Field must be at least 2 characters long.': 'O campo deve ter pelo menos 2 caracteres.',
+        'Field must be at least 10 characters long.': 'O campo deve ter pelo menos 10 caracteres.',
+    },
+    'en': {
+        'This field is required.': 'This field is required.',
+        'Invalid email address.': 'Invalid email address.',
+        'Field must be at least 2 characters long.': 'This field must contain at least 2 characters.',
+        'Field must be at least 10 characters long.': 'This field must contain at least 10 characters.',
+    }
+}
+
+
+def localize_form_error(error_text: str) -> str:
+    lang = session.get('language', 'pt')
+    lang_map = VALIDATION_ERROR_MAP.get(lang, VALIDATION_ERROR_MAP['pt'])
+    return lang_map.get(error_text, error_text)
+
+
+@app.context_processor
+def inject_translations():
+    lang = session.get('language', 'pt')
+    merged = {**TRANSLATIONS['pt'], **TRANSLATIONS.get(lang, {})}
+    return dict(t=merged, localize_error=localize_form_error)
 
 
 def send_telegram(name: str, email: str, message: str) -> bool:
-    token   = os.environ.get("TELEGRAM_TOKEN")
+    token = os.environ.get("TELEGRAM_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
-
     if not token or not chat_id:
-        app.logger.warning("Telegram não configurado.")
+        app.logger.warning("Telegram nao configurado.")
         return False
-
     text = (
-        f"📬 *Novo contacto no portefólio*\n\n"
+        "📬 *Novo contacto no portefólio*\n\n"
         f"👤 *Nome:* {name}\n"
         f"✉️ *Email:* `{email}`\n"
         f"🕐 *Data:* {datetime.utcnow():%d/%m/%Y %H:%M} UTC\n\n"
         f"💬 *Mensagem:*\n{message}"
     )
-
     try:
         resp = requests.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
@@ -61,116 +168,6 @@ def send_telegram(name: str, email: str, message: str) -> bool:
         return False
 
 
-TRANSLATIONS = {
-    "pt": {
-        "projetos": "Projetos",
-        "sobre": "Sobre",
-        "estudante": "Estudante e",
-        "futuro": "Futuro",
-        "engenheiro": "Engenheiro",
-        "de_software": "<br>de Software.",
-        "desc": "Desenvolvimento Front-End, Back-End e Redes, com uma veia de Cibersegurança. Estudante na UAlg.",
-        "btn_projetos": "Explorar Projetos",
-        "btn_cv": "Download Curriculum",
-        "btn_repo": "Explorar Repositório",
-        "p_titulo": "Portefólio Flask + HTMX",
-        "p_desc": "Desenvolvimento de uma SPA (Single Page Application) focada em performance.",
-        "footer": "Feito em Faro, Portugal 🇵🇹",
-        "construir": "Vamos construir <br>algo <span class=\"text-techgreen\">juntos?</span>",
-        "btn_contacto": "Entra em contacto!",
-        "tecnologias": "Tecnologias",
-        "contact_title": "Contacto",
-        "name_label": "Nome *",
-        "email_label": "Email *",
-        "message_label": "Mensagem *",
-        "submit_label": "Enviar Mensagem",
-        "success_msg": "Comunicação estabelecida! Recebi a tua mensagem e respondo em breve.",
-        "error_msg": "Algo correu mal. Tenta novamente.",
-        "about_title": "Sobre",
-        "about_greeting": "Olá, sou o João",
-        "about_p1": "Estudante de <span class=\"text-white font-bold\">Tecnologias Informáticas</span> na Universidade do Algarve, com foco em desenvolvimento de software, redes e cibersegurança. A minha stack técnica inclui <span class=\"text-white font-bold\">Python, Java, JavaScript e React</span>, aliada a conhecimentos práticos em Linux e infraestrutura de redes.",
-        "about_p2": "Paralelamente ao percurso académico, sirvo na <span class=\"text-white font-bold\">Guarda Nacional Republicana</span> — experiência que moldou a minha disciplina, trabalho em equipa e capacidade de resposta sob pressão.",
-        "about_p3": "Tenho formação especializada em <span class=\"text-white font-bold\">cibersegurança ofensiva, resposta a incidentes e ciberresiliência</span>. Valorizo a eficiência, a melhoria contínua e a construção de soluções que funcionam mesmo quando o ambiente não coopera.",
-        "about_based": "Based in",
-        "about_years": "Anos a programar",
-        "about_certs": "CyberSec & Dev",
-        "about_percurso": "Percurso",
-        "about_certificacoes": "Certificações",
-        "about_cta": "Tens um projecto em mente ou queres trocar ideias?",
-        "exp_gnr_title": "Guarda · Patrulheiro",
-        "exp_gnr_org": "Guarda Nacional Republicana",
-        "exp_gnr_date": "mar 2023 — presente",
-        "exp_gnr_desc": "Serviço operacional de patrulha às ocorrências, atendimento ao público, ao encontro das competências de trabalho em equipa, gestão de situações de pressão e stress, mediação e resolução de conflitos, adaptabilidade a ambientes dinâmicos e imprevisíveis, entre outras competências.",
-        "exp_ualg_title": "CTEsP em Tecnologias Informáticas",
-        "exp_ualg_org": "Universidade do Algarve",
-        "exp_ualg_date": "set 2025 — jun 2027",
-        "exp_gnr_curso_title": "Curso de Formação de Guardas",
-        "exp_gnr_curso_org": "Escola da GNR — Portalegre",
-        "exp_gnr_curso_date": "jun 2022 — mar 2023",
-        "exp_sec_title": "Línguas e Humanidades",
-        "exp_sec_org": "ES de Vila Real de Santo António",
-        "exp_sec_date": "2008 — 2021",
-        "badge_atual": "Atual",
-    },
-    "en": {
-        "projetos": "Projects",
-        "sobre": "About",
-        "estudante": "Student and",
-        "futuro": "Future Software",
-        "engenheiro": "Engineer.",
-        "de_software": "",
-        "desc": "Front-End, Back-End, and Network development, with a cybersecurity vein. UAlg student.",
-        "btn_projetos": "Explore Projects",
-        "btn_cv": "Download Resume",
-        "btn_repo": "Explore Repository",
-        "p_titulo": "Flask + HTMX Portfolio",
-        "p_desc": "Development of a performance-focused SPA (Single Page Application).",
-        "footer": "Made in Faro, Portugal 🇵🇹",
-        "construir": "Shall we build <br>something <span class=\"text-techgreen\">together?</span>",
-        "btn_contacto": "Get in touch!",
-        "tecnologias": "Technologies",
-        "contact_title": "Contact",
-        "name_label": "Name *",
-        "email_label": "Email *",
-        "message_label": "Message *",
-        "submit_label": "Send Message",
-        "success_msg": "Communication established! I received your message and will reply soon.",
-        "error_msg": "Something went wrong. Please try again.",
-        "about_title": "About",
-        "about_greeting": "Hi, I'm João",
-        "about_p1": "Student of <span class=\"text-white font-bold\">Information Technologies</span> at the University of Algarve, focused on software development, networking and cybersecurity. My tech stack includes <span class=\"text-white font-bold\">Python, Java, JavaScript and React</span>, combined with hands-on knowledge in Linux and network infrastructure.",
-        "about_p2": "Alongside my academic path, I serve in the <span class=\"text-white font-bold\">GNR (National Republican Guard)</span> — an experience that shaped my discipline, teamwork and ability to perform under pressure.",
-        "about_p3": "I have specialized training in <span class=\"text-white font-bold\">offensive cybersecurity, incident response and cyber resilience</span>. I value efficiency, continuous improvement and building solutions that work even when the environment doesn't cooperate.",
-        "about_based": "Based in",
-        "about_years": "Years coding",
-        "about_certs": "CyberSec & Dev",
-        "about_percurso": "Experience",
-        "about_certificacoes": "Certifications",
-        "about_cta": "Have a project in mind or want to exchange ideas?",
-        "exp_gnr_title": "Guard · Patrol Officer",
-        "exp_gnr_org": "National Republican Guard",
-        "exp_gnr_date": "Mar 2023 — present",
-        "exp_gnr_desc": "Operational patrol service, public assistance — developing teamwork, stress management, conflict mediation, and adaptability to dynamic and unpredictable environments.",
-        "exp_ualg_title": "CTEsP in Information Technologies",
-        "exp_ualg_org": "University of Algarve",
-        "exp_ualg_date": "Sep 2025 — Jun 2027",
-        "exp_gnr_curso_title": "Guard Training Course",
-        "exp_gnr_curso_org": "GNR School — Portalegre",
-        "exp_gnr_curso_date": "Jun 2022 — Mar 2023",
-        "exp_sec_title": "Languages and Humanities",
-        "exp_sec_org": "ES de Vila Real de Santo António",
-        "exp_sec_date": "2008 — 2021",
-        "badge_atual": "Current",
-    }
-}
-
-
-@app.context_processor
-def inject_translations():
-    lang = session.get("language", "pt")
-    return dict(t=TRANSLATIONS.get(lang, TRANSLATIONS["pt"]))
-
-
 @app.route("/language/<language>")
 def set_language(language):
     if language in ["pt", "en"]:
@@ -180,10 +177,10 @@ def set_language(language):
 
 
 class ContactForm(FlaskForm):
-    name    = StringField(validators=[DataRequired(), Length(min=2)])
-    email   = StringField(validators=[DataRequired(), Email()])
+    name = StringField(validators=[DataRequired(), Length(min=2)])
+    email = StringField(validators=[DataRequired(), Email()])
     message = TextAreaField(validators=[DataRequired(), Length(min=10)])
-    submit  = SubmitField()
+    submit = SubmitField()
 
 
 def admin_required(f):
@@ -196,6 +193,7 @@ def admin_required(f):
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
+@csrf.exempt
 def admin_login():
     error = None
     if request.method == "POST":
@@ -230,39 +228,179 @@ def admin_delete(id):
     return redirect(url_for("admin_dashboard"))
 
 
+@app.route('/admin/api/projects', methods=['GET'])
+@csrf.exempt
+@admin_required
+def api_projects_list():
+    projetos = Projeto.query.order_by(Projeto.id).all()
+    return jsonify([p.to_dict('pt') for p in projetos])
+
+
+@app.route("/admin/api/projects", methods=["POST"])
+@csrf.exempt
+@admin_required
+def api_projects_create():
+    data = request.get_json()
+    if not data or not data.get("title_pt") or not data.get("desc_pt"):
+        return jsonify({"error": "Dados invalidos"}), 400
+    p = Projeto(
+        title_pt=data["title_pt"].strip(),
+        title_en=data.get("title_en", "").strip() or None,
+        desc_pt=data["desc_pt"].strip(),
+        desc_en=data.get("desc_en", "").strip() or None,
+        tech=data.get("tech", "").strip(),
+        link=data.get("link", "").strip() or None,
+    )
+    db.session.add(p)
+    db.session.commit()
+    return jsonify(p.to_dict()), 201
+
+
+@app.route("/admin/api/projects/<int:id>", methods=["PUT"])
+@csrf.exempt
+@admin_required
+def api_projects_update(id):
+    p = Projeto.query.get_or_404(id)
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Dados invalidos"}), 400
+    p.title_pt = data.get("title_pt", p.title_pt).strip()
+    p.title_en = data.get("title_en", p.title_en or "").strip() or None
+    p.desc_pt = data.get("desc_pt", p.desc_pt).strip()
+    p.desc_en = data.get("desc_en", p.desc_en or "").strip() or None
+    p.tech = data.get("tech", p.tech).strip()
+    p.link = data.get("link", p.link or "").strip() or None
+    db.session.commit()
+    return jsonify(p.to_dict())
+
+
+@app.route("/admin/api/projects/<int:id>", methods=["DELETE"])
+@csrf.exempt
+@admin_required
+def api_projects_delete(id):
+    p = Projeto.query.get_or_404(id)
+    db.session.delete(p)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.route('/admin/api/certifications', methods=['GET'])
+@csrf.exempt
+@admin_required
+def api_certifications_list():
+    certs = Certificacao.query.order_by(Certificacao.order_index.asc(), Certificacao.id.asc()).all()
+    return jsonify([c.to_dict() for c in certs])
+
+
+@app.route('/admin/api/certifications', methods=['POST'])
+@csrf.exempt
+@admin_required
+def api_certifications_create():
+    data = request.get_json()
+    if not data or not data.get('title') or not data.get('issuer'):
+        return jsonify({'error': 'Dados invalidos'}), 400
+
+    max_order = db.session.query(db.func.max(Certificacao.order_index)).scalar()
+    next_order = (max_order + 1) if max_order is not None else 0
+
+    cert = Certificacao(
+        title=data['title'].strip(),
+        issuer=data['issuer'].strip(),
+        icon=(data.get('icon') or 'shield').strip(),
+        order_index=next_order,
+    )
+    db.session.add(cert)
+    db.session.commit()
+    return jsonify(cert.to_dict()), 201
+
+
+@app.route('/admin/api/certifications/<int:id>', methods=['PUT'])
+@csrf.exempt
+@admin_required
+def api_certifications_update(id):
+    cert = Certificacao.query.get_or_404(id)
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Dados invalidos'}), 400
+
+    cert.title = data.get('title', cert.title).strip()
+    cert.issuer = data.get('issuer', cert.issuer).strip()
+    cert.icon = data.get('icon', cert.icon).strip() or cert.icon
+    if 'order_index' in data:
+        try:
+            cert.order_index = int(data['order_index'])
+        except (TypeError, ValueError):
+            pass
+
+    db.session.commit()
+    return jsonify(cert.to_dict())
+
+
+@app.route('/admin/api/certifications/<int:id>', methods=['DELETE'])
+@csrf.exempt
+@admin_required
+def api_certifications_delete(id):
+    cert = Certificacao.query.get_or_404(id)
+    db.session.delete(cert)
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
 @app.route("/")
 def index():
     return render_template("index.html", active_page='home', form=ContactForm())
 
 
-@app.route("/contact", methods=["GET", "POST"])
 @app.route("/contact-content")
-def contact():
+def contact_content():
+    form = ContactForm()
+    if "HX-Request" in request.headers:
+        return render_template("contacts_fragment.html", form=form)
+    return render_template("index.html", active_page="contact", form=form)
+
+
+@app.route("/contact", methods=["POST"])
+def contact_submit():
     form = ContactForm()
     lang = session.get("language", "pt")
 
-    if request.method == "POST" and form.validate_on_submit():
-        contacto = Contacto(
-            name=form.name.data,
-            email=form.email.data,
-            message=form.message.data
-        )
-        db.session.add(contacto)
-        db.session.commit()
+    if form.validate_on_submit():
+        try:
+            contacto = Contacto(
+                name=form.name.data,
+                email=form.email.data,
+                message=form.message.data
+            )
+            db.session.add(contacto)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            app.logger.error(f"Erro ao guardar contacto: {e}")
+            error_msg = TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('error_msg', 'Erro ao enviar contacto.')
+            flash(error_msg)
+            if "HX-Request" in request.headers:
+                return render_template("contacts_fragment.html", form=form)
+            return render_template("index.html", active_page="contact", form=form)
 
         send_telegram(form.name.data, form.email.data, form.message.data)
-
+        msg = TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('success_msg', '')
         if "HX-Request" in request.headers:
-            return render_template("contacts_fragment.html", form=form,
-                                   success=True, msg=TRANSLATIONS[lang]["success_msg"])
-        flash(TRANSLATIONS[lang]["success_msg"])
-        return redirect(url_for("contact"))
+            return render_template("contacts_fragment.html", form=ContactForm(), success=True, msg=msg)
+        flash(msg)
+        return redirect(url_for("contact_content"))
 
-    elif request.method == "POST":
+    else:
+        field_label_map = {
+            'name': TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('name_label', 'Name').replace('*', '').strip(),
+            'email': TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('email_label', 'Email').replace('*', '').strip(),
+            'message': TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('message_label', 'Message').replace('*', '').strip(),
+        }
+        validation_prefix = TRANSLATIONS.get(lang, TRANSLATIONS['pt']).get('validation_prefix', 'Erro')
         for field, errors in form.errors.items():
             for error in errors:
-                flash(f"Erro ({field}): {error}")
-
+                translated_error = localize_form_error(error)
+                field_label = field_label_map.get(field, field)
+                flash(f"{validation_prefix} ({field_label}): {translated_error}")
     if "HX-Request" in request.headers:
         return render_template("contacts_fragment.html", form=form)
     return render_template("index.html", active_page="contact", form=form)
@@ -277,23 +415,20 @@ def home_content():
 
 @app.route("/projects-content")
 def projects_content():
-    lang = session.get("language", "pt")
-    projects_list = [{
-        "title": TRANSLATIONS[lang]["p_titulo"],
-        "desc":  TRANSLATIONS[lang]["p_desc"],
-        "tech":  ["Python", "Flask", "HTMX", "Tailwind"],
-        "link":  "https://github.com/joaaoazul/portfoliojo"
-    }]
+    lang = session.get('language', 'pt')
+    projetos = Projeto.query.order_by(Projeto.id).all()
+    projects_list = [p.to_dict(lang) for p in projetos]
     if "HX-Request" in request.headers:
         return render_template("projects_fragment.html", projects=projects_list)
-    return render_template("index.html", active_page="projects", projects=projects_list)
+    return render_template("index.html", active_page="projects", projects=projects_list, form=ContactForm())
 
 
 @app.route("/about-content")
 def about_content():
+    certifications = Certificacao.query.order_by(Certificacao.order_index.asc(), Certificacao.id.asc()).all()
     if "HX-Request" in request.headers:
-        return render_template("about_fragment.html")
-    return render_template("index.html", active_page="about")
+        return render_template("about_fragment.html", certifications=certifications)
+    return render_template("index.html", active_page="about", form=ContactForm(), certifications=certifications)
 
 
 if __name__ == "__main__":

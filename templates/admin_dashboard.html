@@ -2,64 +2,622 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <title>Admin — Mensagens</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Painel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { theme: { extend: { colors: { techgreen: '#2563eb' } } } }</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green: #00ff88;
+            --red: #ff3b5c;
+            --bg: #0a0a0a;
+            --surface: #111111;
+            --border: #1e1e1e;
+            --muted: #3a3a3a;
+            --text: #e8e8e8;
+            --subtext: #666;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 2rem 1.5rem; z-index: 100; }
+        .main { margin-left: 240px; padding: 2.5rem 3rem; min-height: 100vh; }
+        .logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 2.5rem; }
+        .logo span { color: var(--green); }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.9rem; border-radius: 0.6rem; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.03em; color: var(--subtext); cursor: pointer; transition: all 0.2s; margin-bottom: 0.25rem; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+        .nav-item:hover { color: var(--text); background: var(--border); }
+        .nav-item.active { color: var(--green); background: rgba(0,255,136,0.08); }
+        .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .sidebar-footer { margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 1.2rem; padding: 1.75rem; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+        .stat-card.green::before { background: var(--green); }
+        .stat-card.red::before { background: var(--red); }
+        .stat-card.blue::before { background: #4d9fff; }
+        table { width: 100%; border-collapse: collapse; }
+        th { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--subtext); padding: 0 1rem 1rem 0; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 1rem 1rem 1rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255,255,255,0.015); }
+        .badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 99px; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; }
+        .badge-green { background: rgba(0,255,136,0.1); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+        .badge-red { background: rgba(255,59,92,0.1); color: var(--red); border: 1px solid rgba(255,59,92,0.2); }
+        .badge-gray { background: rgba(255,255,255,0.05); color: var(--subtext); border: 1px solid var(--border); }
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 1.1rem; border-radius: 0.6rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
+        .btn-green { background: var(--green); color: #000; }
+        .btn-green:hover { background: #00e87a; transform: translateY(-1px); }
+        .btn-outline { background: none; border: 1px solid var(--border); color: var(--subtext); }
+        .btn-outline:hover { border-color: var(--muted); color: var(--text); }
+        .btn-danger { background: rgba(255,59,92,0.1); color: var(--red); border: 1px solid rgba(255,59,92,0.2); }
+        .btn-danger:hover { background: rgba(255,59,92,0.2); }
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; color: var(--subtext); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+        input[type=text], input[type=email], input[type=url], textarea, select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 0.6rem; padding: 0.7rem 1rem; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; transition: border-color 0.2s; }
+        input:focus, textarea:focus, select:focus { border-color: var(--green); }
+        textarea { resize: vertical; min-height: 90px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 1.5rem; padding: 2rem; width: 100%; max-width: 520px; margin: 1rem; animation: slideUp 0.25s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+        .tech-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+        .tech-tag { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.7rem; border-radius: 99px; background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; }
+        .tech-tag button { background: none; border: none; color: inherit; cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0; }
+        .section-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.4rem; }
+        .section-sub { font-size: 0.8rem; color: var(--subtext); font-family: 'JetBrains Mono', monospace; }
+        .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+        .empty { text-align: center; padding: 4rem 2rem; color: var(--subtext); }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .notif-badge { background: var(--red); color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 99px; margin-left: auto; }
+        .msg-preview { color: var(--subtext); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+        .section { display: none; }
+        .section.active { display: block; }
+    </style>
 </head>
-<body class="bg-[#0a0a0a] text-white min-h-screen font-sans p-8">
+<body>
 
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-10">
-        <h1 class="text-3xl font-black tracking-tighter">
-            Mensagens <span class="text-techgreen">({{ contactos|length }})</span>
-        </h1>
-        <a href="/admin/logout"
-           class="text-sm text-zinc-500 hover:text-white transition-colors">
-            Sair →
+<aside class="sidebar">
+    <div class="logo">jo<span>.</span>admin</div>
+    <nav>
+        <button class="nav-item active" onclick="showSection('projetos', this)">
+            <span class="nav-dot"></span> Projetos
+            <span id="proj-count" class="notif-badge" style="background: rgba(0,255,136,0.15); color: var(--green);">0</span>
+        </button>
+        <button class="nav-item" onclick="showSection('certificacoes', this)">
+            <span class="nav-dot"></span> Certificacoes
+            <span id="cert-count" class="notif-badge" style="background: rgba(0,255,136,0.15); color: var(--green);">0</span>
+        </button>
+        <button class="nav-item" onclick="showSection('mensagens', this)">
+            <span class="nav-dot"></span> Mensagens
+            <span id="msg-badge" class="notif-badge" style="display:none">0</span>
+        </button>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="/admin/logout" class="nav-item" style="color: var(--red);">
+            <span class="nav-dot" style="background: var(--red)"></span> Logout
         </a>
     </div>
+</aside>
 
-    {% if not contactos %}
-    <p class="text-zinc-600 text-center py-20">Nenhuma mensagem ainda.</p>
-    {% endif %}
+<main class="main">
 
-    <div class="space-y-4">
-        {% for c in contactos %}
-        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6
-                    {% if not c.lido %}border-techgreen/40{% endif %}">
-            <div class="flex justify-between items-start gap-4">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3 mb-1">
-                        <p class="font-black text-white">{{ c.name }}</p>
-                        {% if not c.lido %}
-                        <span class="text-[10px] font-bold uppercase tracking-widest
-                                     text-techgreen bg-techgreen/10 px-2 py-0.5 rounded-full">
-                            Novo
-                        </span>
-                        {% endif %}
-                    </div>
-                    <a href="mailto:{{ c.email }}"
-                       class="text-sm text-techgreen hover:underline">{{ c.email }}</a>
-                    <p class="text-xs text-zinc-600 mt-1">
-                        {{ c.created_at.strftime('%d/%m/%Y às %H:%M') }} UTC
-                    </p>
-                </div>
-
-                <form method="POST" action="/admin/delete/{{ c.id }}"
-                      onsubmit="return confirm('Apagar esta mensagem?')">
-                    <button type="submit"
-                            class="text-zinc-600 hover:text-red-400 transition-colors text-xl
-                                   leading-none cursor-pointer">
-                        ×
-                    </button>
-                </form>
+    <section id="sec-projetos" class="section active">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:2rem;">
+            <div>
+                <div class="section-title">Projetos</div>
+                <div class="section-sub">Gerir projetos do portefólio</div>
             </div>
-
-            <p class="mt-4 text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap
-                       border-t border-zinc-800 pt-4">{{ c.message }}</p>
+            <button class="btn btn-green" onclick="openModal('add')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                Novo Projeto
+            </button>
         </div>
-        {% endfor %}
+
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-bottom:2rem;">
+            <div class="stat-card green">
+                <div class="mono" style="font-size:0.65rem; color:var(--subtext); letter-spacing:.1em; margin-bottom:.5rem;">TOTAL</div>
+                <div style="font-size:2rem; font-weight:800;" id="stat-total">0</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="mono" style="font-size:0.65rem; color:var(--subtext); letter-spacing:.1em; margin-bottom:.5rem;">TECNOLOGIAS</div>
+                <div style="font-size:2rem; font-weight:800;" id="stat-techs">0</div>
+            </div>
+            <div class="stat-card red">
+                <div class="mono" style="font-size:0.65rem; color:var(--subtext); letter-spacing:.1em; margin-bottom:.5rem;">LINKS ATIVOS</div>
+                <div style="font-size:2rem; font-weight:800;" id="stat-links">0</div>
+            </div>
+        </div>
+
+        <div class="card" id="proj-list-container">
+            <div class="empty" id="proj-empty">
+                <div class="empty-icon">📁</div>
+                <div style="font-weight:700; margin-bottom:.5rem;">Sem projetos</div>
+                <div style="font-size:.85rem;">Clica em "Novo Projeto" para adicionar o primeiro.</div>
+            </div>
+            <table id="proj-table" style="display:none">
+                <thead>
+                <tr>
+                    <th>Projeto</th>
+                    <th>Tecnologias</th>
+                    <th>Link</th>
+                    <th style="text-align:right">Ações</th>
+                </tr>
+                </thead>
+                <tbody id="proj-tbody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section id="sec-mensagens" class="section">
+        <div style="margin-bottom:2rem;">
+            <div class="section-title">Mensagens</div>
+            <div class="section-sub">Contactos recebidos pelo formulário</div>
+        </div>
+        <div class="card">
+            {% if contactos %}
+            <table>
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Mensagem</th>
+                    <th>Data</th>
+                    <th style="text-align:right">Ação</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for c in contactos %}
+                <tr id="row-{{ c.id }}">
+                    <td style="width:20px">{% if not c.lido %}<span class="unread-dot"></span>{% endif %}</td>
+                    <td style="font-weight:700">{{ c.name }}</td>
+                    <td><a href="mailto:{{ c.email }}" class="mono" style="color:var(--green); font-size:.8rem; text-decoration:none">{{ c.email }}</a></td>
+                    <td><div class="msg-preview" title="{{ c.message }}">{{ c.message }}</div></td>
+                    <td><span class="mono" style="font-size:.75rem; color:var(--subtext)">{{ c.created_at.strftime('%d/%m/%Y') }}<br>{{ c.created_at.strftime('%H:%M') }}</span></td>
+                    <td style="text-align:right">
+                        <form method="POST" action="/admin/delete/{{ c.id }}" onsubmit="return confirm('Apagar esta mensagem?')" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-danger" type="submit">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                                Apagar
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">
+                <div class="empty-icon">📭</div>
+                <div style="font-weight:700; margin-bottom:.5rem;">Sem mensagens</div>
+                <div style="font-size:.85rem;">Quando alguém contactar aparece aqui.</div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section id="sec-certificacoes" class="section">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:2rem;">
+            <div>
+                <div class="section-title">Certificacoes</div>
+                <div class="section-sub">Gerir certificacoes exibidas na secao About</div>
+            </div>
+            <button class="btn btn-green" onclick="openCertModal('add')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                Nova Certificacao
+            </button>
+        </div>
+
+        <div class="card" id="cert-list-container">
+            <div class="empty" id="cert-empty">
+                <div class="empty-icon">🛡️</div>
+                <div style="font-weight:700; margin-bottom:.5rem;">Sem certificacoes</div>
+                <div style="font-size:.85rem;">Clica em "Nova Certificacao" para adicionar a primeira.</div>
+            </div>
+            <table id="cert-table" style="display:none">
+                <thead>
+                <tr>
+                    <th>Ordem</th>
+                    <th>Titulo</th>
+                    <th>Emissor</th>
+                    <th>Icone</th>
+                    <th style="text-align:right">Acoes</th>
+                </tr>
+                </thead>
+                <tbody id="cert-tbody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<div class="modal-overlay" id="proj-modal">
+    <div class="modal">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+            <div style="font-size:1.1rem; font-weight:800;" id="modal-title">Novo Projeto</div>
+            <button onclick="closeModal()" style="background:none; border:none; color:var(--subtext); cursor:pointer; font-size:1.4rem; line-height:1;">×</button>
+        </div>
+        <form id="proj-form" onsubmit="submitProject(event)">
+            <input type="hidden" id="proj-id" value="">
+            <div class="form-group">
+                <label>Título 🇵🇹</label>
+                <input type="text" id="proj-title-pt" placeholder="Nome do projeto (PT)" required>
+            </div>
+            <div class="form-group">
+                <label>Título 🇬🇧</label>
+                <input type="text" id="proj-title-en" placeholder="Project name (EN)">
+            </div>
+            <div class="form-group">
+                <label>Descrição 🇵🇹</label>
+                <textarea id="proj-desc-pt" placeholder="Breve descrição (PT)..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Descrição 🇬🇧</label>
+                <textarea id="proj-desc-en" placeholder="Short description (EN)..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tecnologias</label>
+                <div style="display:flex; gap:.5rem;">
+                    <input type="text" id="tech-input" placeholder="Python, Flask... (Enter para adicionar)">
+                    <button type="button" class="btn btn-outline" onclick="addTech()">+</button>
+                </div>
+                <div class="tech-tags" id="tech-tags"></div>
+                <input type="hidden" id="proj-tech" required>
+            </div>
+            <div class="form-group">
+                <label>Link GitHub</label>
+                <input type="url" id="proj-link" placeholder="https://github.com/...">
+            </div>
+            <div style="display:flex; gap:.75rem; justify-content:flex-end; margin-top:1.75rem;">
+                <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-green" id="modal-submit-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<div class="modal-overlay" id="cert-modal">
+    <div class="modal">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+            <div style="font-size:1.1rem; font-weight:800;" id="cert-modal-title">Nova Certificacao</div>
+            <button onclick="closeCertModal()" style="background:none; border:none; color:var(--subtext); cursor:pointer; font-size:1.4rem; line-height:1;">×</button>
+        </div>
+        <form id="cert-form" onsubmit="submitCert(event)">
+            <input type="hidden" id="cert-id" value="">
+            <div class="form-group">
+                <label>Titulo</label>
+                <input type="text" id="cert-title" placeholder="Nome da certificacao" required>
+            </div>
+            <div class="form-group">
+                <label>Emissor</label>
+                <input type="text" id="cert-issuer" placeholder="Entidade emissora" required>
+            </div>
+            <div class="form-group">
+                <label>Icone</label>
+                <select id="cert-icon">
+                    <option value="shield">Shield</option>
+                    <option value="lock">Lock</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ordem</label>
+                <input type="text" id="cert-order" placeholder="0, 1, 2..." required>
+            </div>
+            <div style="display:flex; gap:.75rem; justify-content:flex-end; margin-top:1.75rem;">
+                <button type="button" class="btn btn-outline" onclick="closeCertModal()">Cancelar</button>
+                <button type="submit" class="btn btn-green" id="cert-modal-submit-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                    Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="msg-modal">
+    <div class="modal">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
+            <div style="font-size:1.1rem; font-weight:800;">Mensagem</div>
+            <button onclick="document.getElementById('msg-modal').classList.remove('open')" style="background:none; border:none; color:var(--subtext); cursor:pointer; font-size:1.4rem;">×</button>
+        </div>
+        <div id="msg-modal-content"></div>
+    </div>
+</div>
+
+<script>
+    function showSection(name, triggerEl) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('sec-' + name).classList.add('active');
+        if (triggerEl) triggerEl.classList.add('active');
+    }
+
+    let projects = [];
+    let certifications = [];
+    let currentTechs = [];
+    let editingId = null;
+    let editingCertId = null;
+
+    async function loadProjects() {
+        try {
+            const res = await fetch('/admin/api/projects');
+            projects = await res.json();
+            renderProjects();
+        } catch(e) {
+            projects = [];
+            renderProjects();
+        }
+    }
+
+    async function loadCertifications() {
+        try {
+            const res = await fetch('/admin/api/certifications');
+            certifications = await res.json();
+            renderCertifications();
+        } catch(e) {
+            certifications = [];
+            renderCertifications();
+        }
+    }
+
+    function renderProjects() {
+        const tbody = document.getElementById('proj-tbody');
+        const table = document.getElementById('proj-table');
+        const empty = document.getElementById('proj-empty');
+
+        document.getElementById('stat-total').textContent = projects.length;
+        document.getElementById('proj-count').textContent = projects.length;
+
+        const allTechs = new Set(projects.flatMap(p => p.tech || []));
+        document.getElementById('stat-techs').textContent = allTechs.size;
+        document.getElementById('stat-links').textContent = projects.filter(p => p.link).length;
+
+        if (projects.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
+        tbody.innerHTML = projects.map(p => `
+            <tr>
+                <td>
+                    <div style="font-weight:700; margin-bottom:.2rem">${escHtml(p.title_pt || '')}</div>
+                    <div style="font-size:.78rem; color:var(--subtext); max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">${escHtml(p.desc_pt || '')}</div>
+                </td>
+                <td>
+                    <div style="display:flex; flex-wrap:wrap; gap:.3rem">
+                        ${(p.tech||[]).map(t => `<span class="badge badge-gray">${escHtml(t)}</span>`).join('')}
+                    </div>
+                </td>
+                <td>
+                    ${p.link ? `<a href="${escHtml(p.link)}" target="_blank" class="mono" style="color:var(--green); font-size:.75rem; text-decoration:none">↗ GitHub</a>` : '<span style="color:var(--subtext);font-size:.8rem">—</span>'}
+                </td>
+                <td style="text-align:right">
+                    <div style="display:flex; gap:.5rem; justify-content:flex-end">
+                        <button class="btn btn-outline" onclick="openModal('edit', ${p.id})">Editar</button>
+                        <button class="btn btn-danger" onclick="deleteProject(${p.id})">Apagar</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderCertifications() {
+        const tbody = document.getElementById('cert-tbody');
+        const table = document.getElementById('cert-table');
+        const empty = document.getElementById('cert-empty');
+
+        document.getElementById('cert-count').textContent = certifications.length;
+
+        if (certifications.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'block';
+            return;
+        }
+
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
+        const ordered = [...certifications].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        tbody.innerHTML = ordered.map(c => `
+            <tr>
+                <td><span class="mono" style="font-size:.75rem">${escHtml(c.order_index ?? 0)}</span></td>
+                <td style="font-weight:700">${escHtml(c.title || '')}</td>
+                <td>${escHtml(c.issuer || '')}</td>
+                <td><span class="badge badge-gray">${escHtml(c.icon || 'shield')}</span></td>
+                <td style="text-align:right">
+                    <div style="display:flex; gap:.5rem; justify-content:flex-end">
+                        <button class="btn btn-outline" onclick="openCertModal('edit', ${c.id})">Editar</button>
+                        <button class="btn btn-danger" onclick="deleteCert(${c.id})">Apagar</button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function openModal(mode, id = null) {
+        editingId = id;
+        currentTechs = [];
+        document.getElementById('proj-id').value = '';
+        document.getElementById('proj-title-pt').value = '';
+        document.getElementById('proj-title-en').value = '';
+        document.getElementById('proj-desc-pt').value = '';
+        document.getElementById('proj-desc-en').value = '';
+        document.getElementById('proj-link').value = '';
+        document.getElementById('tech-input').value = '';
+        document.getElementById('proj-tech').value = '';
+        document.getElementById('tech-tags').innerHTML = '';
+
+        if (mode === 'edit' && id !== null) {
+            const p = projects.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('modal-title').textContent = 'Editar Projeto';
+            document.getElementById('modal-submit-btn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Atualizar`;
+            document.getElementById('proj-id').value = p.id;
+            document.getElementById('proj-title-pt').value = p.title_pt || '';
+            document.getElementById('proj-title-en').value = p.title_en || '';
+            document.getElementById('proj-desc-pt').value = p.desc_pt || '';
+            document.getElementById('proj-desc-en').value = p.desc_en || '';
+            document.getElementById('proj-link').value = p.link || '';
+            currentTechs = [...(p.tech || [])];
+            renderTechTags();
+        } else {
+            document.getElementById('modal-title').textContent = 'Novo Projeto';
+            document.getElementById('modal-submit-btn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Guardar`;
+        }
+
+        document.getElementById('proj-modal').classList.add('open');
+        setTimeout(() => document.getElementById('proj-title-pt').focus(), 100);
+    }
+
+    function closeModal() {
+        document.getElementById('proj-modal').classList.remove('open');
+    }
+
+    function openCertModal(mode, id = null) {
+        editingCertId = id;
+        document.getElementById('cert-id').value = '';
+        document.getElementById('cert-title').value = '';
+        document.getElementById('cert-issuer').value = '';
+        document.getElementById('cert-icon').value = 'shield';
+        document.getElementById('cert-order').value = certifications.length;
+
+        if (mode === 'edit' && id !== null) {
+            const cert = certifications.find(x => x.id === id);
+            if (!cert) return;
+            document.getElementById('cert-modal-title').textContent = 'Editar Certificacao';
+            document.getElementById('cert-modal-submit-btn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Atualizar`;
+            document.getElementById('cert-id').value = cert.id;
+            document.getElementById('cert-title').value = cert.title || '';
+            document.getElementById('cert-issuer').value = cert.issuer || '';
+            document.getElementById('cert-icon').value = cert.icon || 'shield';
+            document.getElementById('cert-order').value = cert.order_index ?? 0;
+        } else {
+            document.getElementById('cert-modal-title').textContent = 'Nova Certificacao';
+            document.getElementById('cert-modal-submit-btn').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Guardar`;
+        }
+
+        document.getElementById('cert-modal').classList.add('open');
+        setTimeout(() => document.getElementById('cert-title').focus(), 100);
+    }
+
+    function closeCertModal() {
+        document.getElementById('cert-modal').classList.remove('open');
+    }
+
+    document.getElementById('tech-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); addTech(); }
+    });
+
+    function addTech() {
+        const input = document.getElementById('tech-input');
+        const val = input.value.trim();
+        if (!val || currentTechs.includes(val)) { input.value = ''; return; }
+        currentTechs.push(val);
+        input.value = '';
+        renderTechTags();
+    }
+
+    function removeTech(t) {
+        currentTechs = currentTechs.filter(x => x !== t);
+        renderTechTags();
+    }
+
+    function renderTechTags() {
+        document.getElementById('tech-tags').innerHTML = currentTechs.map(t =>
+            `<span class="tech-tag">${escHtml(t)}<button type="button" onclick="removeTech('${escHtml(t)}')">×</button></span>`
+        ).join('');
+        document.getElementById('proj-tech').value = currentTechs.join(',');
+    }
+
+    async function submitProject(e) {
+        e.preventDefault();
+        const id = document.getElementById('proj-id').value;
+        const payload = {
+            title_pt: document.getElementById('proj-title-pt').value.trim(),
+            title_en: document.getElementById('proj-title-en').value.trim(),
+            desc_pt:  document.getElementById('proj-desc-pt').value.trim(),
+            desc_en:  document.getElementById('proj-desc-en').value.trim(),
+            tech:     currentTechs.join(','),
+            link:     document.getElementById('proj-link').value.trim(),
+        };
+        const url    = id ? `/admin/api/projects/${id}` : '/admin/api/projects';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) { closeModal(); loadProjects(); }
+        else { alert('Erro ao guardar. Tenta novamente.'); }
+    }
+
+    async function deleteProject(id) {
+        if (!confirm('Apagar este projeto?')) return;
+        const res = await fetch(`/admin/api/projects/${id}`, { method: 'DELETE' });
+        if (res.ok) loadProjects();
+    }
+
+    async function submitCert(e) {
+        e.preventDefault();
+        const id = document.getElementById('cert-id').value;
+        const payload = {
+            title: document.getElementById('cert-title').value.trim(),
+            issuer: document.getElementById('cert-issuer').value.trim(),
+            icon: document.getElementById('cert-icon').value,
+            order_index: Number(document.getElementById('cert-order').value || 0),
+        };
+
+        const url = id ? `/admin/api/certifications/${id}` : '/admin/api/certifications';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+            closeCertModal();
+            loadCertifications();
+        } else {
+            alert('Erro ao guardar certificacao.');
+        }
+    }
+
+    async function deleteCert(id) {
+        if (!confirm('Apagar esta certificacao?')) return;
+        const res = await fetch(`/admin/api/certifications/${id}`, { method: 'DELETE' });
+        if (res.ok) loadCertifications();
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('proj-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    document.getElementById('cert-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeCertModal();
+    });
+
+    const unreadDots = document.querySelectorAll('.unread-dot').length;
+    if (unreadDots > 0) {
+        const badge = document.getElementById('msg-badge');
+        badge.textContent = unreadDots;
+        badge.style.display = 'inline';
+    }
+
+    loadProjects();
+    loadCertifications();
+</script>
 </body>
 </html>
