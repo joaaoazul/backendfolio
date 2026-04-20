@@ -444,5 +444,15 @@ def about_content():
     return render_template("index.html", active_page="about", form=ContactForm(), certifications=certifications)
 
 
+@app.route("/privacy")
+def privacy_page():
+    return render_template("privacy.html")
+
+
+@app.route("/cookies")
+def cookies_page():
+    return render_template("cookies.html")
+
+
 if __name__ == "__main__":
     app.run(debug=True)

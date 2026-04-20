@@ -66,6 +66,11 @@
             <button type="submit" class="flex items-center justify-center gap-4 w-full text-white transition-all duration-300 border border-zinc-700 rounded-xl py-5 text-xl bg-zinc-800 hover:bg-techgreen hover:border-techgreen shadow-lg hover:-translate-y-1 active:scale-95 font-bold cursor-pointer">
                 {{ t.submit_label }}
             </button>
+
+            <p class="text-xs text-zinc-500 leading-relaxed text-left">
+                {{ t.contact_privacy_notice }}
+                <a href="/privacy" class="text-techgreen hover:text-white">{{ t.privacy_label }}</a>.
+            </p>
         </form>
     {% endif %}
 </section>
