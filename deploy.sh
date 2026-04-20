@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SERVER="hetzner-cyberbananas"
+SERVER="lab-bananas"
 APP_DIR="/var/www/joaoazuldev"
 
 echo "🚀 Deploying to $SERVER..."
