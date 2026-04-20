@@ -20,6 +20,8 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///contactos.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+
 csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
 
@@ -106,7 +108,7 @@ with app.app_context():
 def load_translations():
     translations = {}
     for lang in ['pt', 'en']:
-        path = os.path.join('translations', f'{lang}.json')
+        path = os.path.join(BASEDIR, 'translations', f'{lang}.json')
         with open(path, encoding='utf-8') as f:
             translations[lang] = json.load(f)
     return translations
