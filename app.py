@@ -175,6 +175,12 @@ def set_language(language):
     if language in ["pt", "en"]:
         session["language"] = language
         session.modified = True
+
+    # Keep users on the current in-site page after switching language.
+    next_url = request.args.get("next", "")
+    if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+        return redirect(next_url)
+
     return redirect(request.referrer or url_for('index'))
 
 

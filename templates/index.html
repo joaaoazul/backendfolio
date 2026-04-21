@@ -60,18 +60,10 @@
                target="_blank"
                class="hover:text-white transition-colors border-b border-transparent hover:border-techgreen">CV</a>
             <div class="flex items-center gap-2 text-zinc-400 text-sm font-medium">
-                <a href="/language/pt"
-                   hx-get="/home-content"
-                   hx-target="#main-content"
-                   hx-push-url="/"
-                   hx-trigger="click"
+                <a href="{{ url_for('set_language', language='pt', next=request.path) }}"
                    class="hover:text-white transition-colors outline-none">PT</a>
                 <span>|</span>
-                <a href="/language/en"
-                   hx-get="/home-content"
-                   hx-target="#main-content"
-                   hx-push-url="/"
-                   hx-trigger="click"
+                <a href="{{ url_for('set_language', language='en', next=request.path) }}"
                    class="hover:text-white transition-colors outline-none">EN</a>
             </div>
         </nav>
