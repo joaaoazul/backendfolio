@@ -17,7 +17,11 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///contactos.db'
+_database_url = os.environ.get("DATABASE_URL", "sqlite:///contactos.db")
+if _database_url.startswith("postgres://"):
+    _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = _database_url
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
