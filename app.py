@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import requests
 from datetime import datetime
@@ -18,8 +19,9 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 _database_url = os.environ.get("DATABASE_URL", "sqlite:///contactos.db")
-if _database_url.startswith("postgres://"):
-    _database_url = _database_url.replace("postgres://", "postgresql://", 1)
+# Normaliza qualquer esquema Postgres (postgres://, postgresql://, postgresql+psycopg://)
+# para o driver psycopg2 instalado em requirements.txt.
+_database_url = re.sub(r"^postgres(ql)?(\+\w+)?://", "postgresql+psycopg2://", _database_url)
 app.config['SQLALCHEMY_DATABASE_URI'] = _database_url
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
